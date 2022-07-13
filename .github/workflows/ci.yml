@@ -32,9 +32,9 @@ jobs:
       - name: Install dependencies
         run: yarn && npx playwright install
       - name: Lint
-        run: yarn lint
+        run: yarn eslint:check
       - name: Prettier
-        run: yarn format:check
+        run: yarn prettier:check
       - name: Build
         run: yarn build
       - name: Test
