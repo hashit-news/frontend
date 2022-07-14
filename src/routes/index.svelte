@@ -1,6 +1,7 @@
 <script context="module" lang="ts">
+  import config from '$lib/config';
   export async function load() {
-    const res = await fetch('http://localhost:3000/posts');
+    const res = await fetch(`http://localhost:${config.app.port}/posts`);
     const posts = await res.json();
 
     return {
