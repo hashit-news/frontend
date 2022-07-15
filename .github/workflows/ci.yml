@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['>=16.0.0']
+        node: ['>=14.0.0']
 
     steps:
       - name: Checkout source code
@@ -32,10 +32,8 @@ jobs:
       - name: Install dependencies
         run: yarn && npx playwright install
       - name: Lint
-        run: yarn eslint:check
+        run: yarn lint
       - name: Prettier
         run: yarn prettier:check
       - name: Build
         run: yarn build
-      - name: Test
-        run: yarn test
