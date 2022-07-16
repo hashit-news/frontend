@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }: Props) => {
     <AuthContext.Provider
       value={{
         user,
+        chainId,
         signIn,
         signOut,
       }}

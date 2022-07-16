@@ -1,6 +1,6 @@
 export type AuthContextProps = {
   user?: AuthUser;
-  chainId?: number;
+  chainId?: string;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 };
