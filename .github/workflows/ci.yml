@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['>=14.0.0']
+        node: ['14.x']
 
     steps:
       - name: Checkout source code
@@ -41,7 +41,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-          check-latest: false
       - name: Install dependencies
         run: yarn && npx playwright install
       - name: Lint
