@@ -41,6 +41,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
+          check-latest: false
       - name: Install dependencies
         run: yarn && npx playwright install
       - name: Lint
