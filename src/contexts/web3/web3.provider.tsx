@@ -31,20 +31,25 @@ export const Web3Provider = ({ children }: Props) => {
 
   useEffect(() => {
     if (provider) {
-      provider.on('accountsChanged', accounts => {
-        console.log('accountsChanged', accounts);
-        setUser(undefined);
+      provider.on('accountsChanged', _accounts => {
+        console.log('accountsChanged', _accounts);
+        signOut();
       });
 
       provider.on('chainChanged', (chainId: string) => {
-        console.log('chainChanged', chainId);
+        if (user) {
+          setUser({
+            ...user,
+            chainId,
+          });
+        }
       });
     }
 
     return () => {
       provider?.removeAllListeners();
     };
-  }, [provider, setUser]);
+  }, [provider]);
 
   // When mounted on client, now we can show the UI
   useEffect(() => setMounted(true), []);
@@ -54,7 +59,6 @@ export const Web3Provider = ({ children }: Props) => {
   useInterval(
     () => {
       if (user && token && token.refresh_token) {
-        console.log('checking refresh token');
         const payload = jwt_decode<JwtPayloadDto>(token.access_token);
         const expires_unix = payload.exp ?? 0;
 
@@ -62,8 +66,6 @@ export const Web3Provider = ({ children }: Props) => {
           const expiry = moment.unix(expires_unix);
           const now = moment.utc();
           if (now.isAfter(expiry)) {
-            console.log('refreshing token');
-            console.log('token expired, refreshing');
             getRefreshToken(token.refresh_token).then(newToken => {
               setToken(newToken);
             });
@@ -86,12 +88,10 @@ export const Web3Provider = ({ children }: Props) => {
       const chainId = (await provider.request({ method: 'eth_chainId' })) as string;
 
       if (chainId !== process.env.NEXT_PUBLIC_ETH_ALLOWED_CHAIN_ID) {
-        const res = await provider.request({
+        await provider.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: process.env.NEXT_PUBLIC_ETH_ALLOWED_CHAIN_ID }],
         });
-
-        console.log(res);
       }
 
       const address = accounts[0];
@@ -104,6 +104,7 @@ export const Web3Provider = ({ children }: Props) => {
       if (token) {
         const payload = jwt_decode<JwtPayloadDto>(token.access_token);
 
+        setToken(token);
         setWeb3(web3);
         setProvider(provider);
         setUser({
@@ -118,6 +119,7 @@ export const Web3Provider = ({ children }: Props) => {
 
   const signOut = async () => {
     setUser(undefined);
+    setToken(undefined);
   };
 
   const getLoginInfo = async (publicAddress: string) => {
@@ -126,19 +128,14 @@ export const Web3Provider = ({ children }: Props) => {
 
   const getAccessToken = async (publicAddress: string, signedMessage: string) => {
     try {
-      const res = await api.auth.getToken({
+      return await api.auth.getToken({
         requestBody: {
           publicAddress,
           signedMessage,
         },
       });
-
-      setToken(res);
-
-      return res;
     } catch (err) {
-      setToken(undefined);
-      setUser(undefined);
+      signOut();
     }
 
     return;
@@ -152,8 +149,7 @@ export const Web3Provider = ({ children }: Props) => {
         },
       });
     } catch (err) {
-      setToken(undefined);
-      setUser(undefined);
+      signOut();
     }
 
     return;
