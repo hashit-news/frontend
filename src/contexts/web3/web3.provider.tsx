@@ -32,7 +32,6 @@ export const Web3Provider = ({ children }: Props) => {
   useEffect(() => {
     if (provider) {
       provider.on('accountsChanged', _accounts => {
-        console.log('accountsChanged', _accounts);
         signOut();
       });
 
