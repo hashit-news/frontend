@@ -7,6 +7,9 @@ import { BaseProvider } from '@metamask/providers';
 import api from '../../api/backend';
 import jwt_decode from 'jwt-decode';
 import useLocalStorage from '../../hooks/useLocalStorage';
+import useInterval from '../../hooks/useInterval';
+import moment from 'moment';
+import { AccessTokenResponse } from '../../api/backend/swagger';
 
 const AuthContext = createContext<Web3ContextProps>({
   signIn: async () => {},
@@ -22,6 +25,7 @@ type Props = {
 export const Web3Provider = ({ children }: Props) => {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useLocalStorage<Web3User | undefined>('USER', undefined);
+  const [token, setToken] = useLocalStorage<AccessTokenResponse | undefined>('TOKEN', undefined);
   const [web3, setWeb3] = useState<Web3>();
   const [provider, setProvider] = useState<BaseProvider>();
 
@@ -44,6 +48,31 @@ export const Web3Provider = ({ children }: Props) => {
 
   // When mounted on client, now we can show the UI
   useEffect(() => setMounted(true), []);
+
+  // check every minute to see if a
+  // user's token needs to be refreshed
+  useInterval(
+    () => {
+      if (user && token && token.refresh_token) {
+        console.log('checking refresh token');
+        const payload = jwt_decode<JwtPayloadDto>(token.access_token);
+        const expires_unix = payload.exp ?? 0;
+
+        if (expires_unix > 0) {
+          const expiry = moment.unix(expires_unix);
+          const now = moment.utc();
+          if (now.isAfter(expiry)) {
+            console.log('refreshing token');
+            console.log('token expired, refreshing');
+            getRefreshToken(token.refresh_token).then(newToken => {
+              setToken(newToken);
+            });
+          }
+        }
+      }
+    },
+    user && token && token.refresh_token ? 60000 : null
+  );
 
   if (!mounted) {
     return null;
@@ -71,15 +100,19 @@ export const Web3Provider = ({ children }: Props) => {
 
       const signedMessage = await web3.eth.personal.sign(loginInfo.signature, loginInfo.publicAddress, '');
       const token = await getAccessToken(address, signedMessage);
-      const user = jwt_decode<JwtPayloadDto>(token.access_token);
-      setWeb3(web3);
-      setProvider(provider);
-      setUser({
-        id: user.sub,
-        username: user.name,
-        walletAddress: address,
-        chainId,
-      });
+
+      if (token) {
+        const payload = jwt_decode<JwtPayloadDto>(token.access_token);
+
+        setWeb3(web3);
+        setProvider(provider);
+        setUser({
+          id: payload.sub,
+          username: payload.name,
+          walletAddress: address,
+          chainId,
+        });
+      }
     }
   };
 
@@ -92,12 +125,38 @@ export const Web3Provider = ({ children }: Props) => {
   };
 
   const getAccessToken = async (publicAddress: string, signedMessage: string) => {
-    return api.auth.getToken({
-      requestBody: {
-        publicAddress,
-        signedMessage,
-      },
-    });
+    try {
+      const res = await api.auth.getToken({
+        requestBody: {
+          publicAddress,
+          signedMessage,
+        },
+      });
+
+      setToken(res);
+
+      return res;
+    } catch (err) {
+      setToken(undefined);
+      setUser(undefined);
+    }
+
+    return;
+  };
+
+  const getRefreshToken = async (refreshToken: string) => {
+    try {
+      return await api.auth.getRefreshToken({
+        requestBody: {
+          refreshToken,
+        },
+      });
+    } catch (err) {
+      setToken(undefined);
+      setUser(undefined);
+    }
+
+    return;
   };
 
   return (

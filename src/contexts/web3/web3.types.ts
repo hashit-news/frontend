@@ -17,4 +17,6 @@ export type Web3User = {
 export interface JwtPayloadDto {
   sub: string;
   name?: string | null;
+  iat?: number;
+  exp?: number;
 }
