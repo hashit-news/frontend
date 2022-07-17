@@ -1,14 +1,14 @@
 import { ThemeProvider } from 'next-themes';
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
-import { AuthProvider } from '../contexts/auth/auth.provider';
+import { Web3Provider } from '../contexts/web3/web3.provider';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider defaultTheme="system">
-      <AuthProvider>
+      <Web3Provider>
         <Component {...pageProps} />
-      </AuthProvider>
+      </Web3Provider>
     </ThemeProvider>
   );
 }

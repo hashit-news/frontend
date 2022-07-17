@@ -12,7 +12,8 @@
     "prettier:check": "prettier --ignore-path .gitignore --check --plugin-search-dir=. .",
     "prettier:fix": "prettier --ignore-path .gitignore --write --plugin-search-dir=. .",
     "prepare": "husky install",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "codegen": "openapi -i ./src/api/backend/swagger.json -o ./src/api/backend/swagger -c axios --name BackendApiClient --useUnionTypes --useOptions"
   },
   "dependencies": {
     "@headlessui/react": "^1.6.6",
@@ -22,6 +23,7 @@
     "@metamask/providers": "^9.0.0",
     "@types/axios": "^0.14.0",
     "axios": "^0.27.2",
+    "jwt-decode": "^3.1.2",
     "next": "12.2.2",
     "next-themes": "^0.2.0",
     "react": "18.2.0",
@@ -40,6 +42,7 @@
     "eslint-config-prettier": "^8.5.0",
     "husky": "^8.0.0",
     "lint-staged": "^13.0.3",
+    "openapi-typescript-codegen": "^0.23.0",
     "postcss": "^8.4.14",
     "prettier": "^2.7.1",
     "tailwindcss": "^3.1.6",

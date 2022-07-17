@@ -3,7 +3,7 @@ import { FunctionComponent } from 'react';
 import { ThemeSwitcher } from '../theme-switcher/theme-switcher';
 import { HeaderProps } from './header.types';
 import { UserCircleIcon } from '@heroicons/react/solid';
-import { useAuth } from '../../contexts/auth/auth.provider';
+import { useAuth } from '../../contexts/web3/web3.provider';
 
 export const Header: FunctionComponent<HeaderProps> = () => {
   const { user, signIn, signOut } = useAuth();
