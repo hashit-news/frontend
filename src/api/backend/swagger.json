@@ -1,0 +1,190 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "getHello",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "", "content": { "application/json": { "schema": { "type": "string" } } } }
+        }
+      }
+    },
+    "/protected": {
+      "get": {
+        "operationId": "getProtectedHello",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "", "content": { "application/json": { "schema": { "type": "object" } } } }
+        },
+        "security": [{ "bearer": [] }]
+      }
+    },
+    "/auth/web3": {
+      "get": {
+        "operationId": "getLoginInfo",
+        "parameters": [{ "name": "publicAddress", "required": true, "in": "query", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Web3LoginInfoResponse" } } }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "500": {
+            "description": "Internal Service Error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/auth/login/test": {
+      "get": {
+        "operationId": "createAndSignWeb3LoginInfo",
+        "parameters": [],
+        "responses": {
+          "200": { "description": "" },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "500": {
+            "description": "Internal Service Error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/auth/token": {
+      "post": {
+        "operationId": "getToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Web3LoginRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccessTokenResponse" } } }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "500": {
+            "description": "Internal Service Error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          }
+        },
+        "tags": ["auth"]
+      }
+    },
+    "/auth/token/refresh": {
+      "post": {
+        "operationId": "getRefreshToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RefreshTokenRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccessTokenResponse" } } }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          },
+          "500": {
+            "description": "Internal Service Error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetail" } } }
+          }
+        },
+        "tags": ["auth"]
+      }
+    }
+  },
+  "info": { "title": "hashit API", "description": "", "version": "1.0", "contact": {} },
+  "tags": [{ "name": "hashit", "description": "" }],
+  "servers": [],
+  "components": {
+    "securitySchemes": { "bearer": { "scheme": "bearer", "bearerFormat": "JWT", "type": "http" } },
+    "schemas": {
+      "ProblemDetail": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "number" },
+          "title": { "type": "string" },
+          "type": { "type": "string" },
+          "detail": { "type": "string" },
+          "instance": { "type": "string" }
+        },
+        "required": ["status", "title", "type"]
+      },
+      "Web3LoginInfoResponse": {
+        "type": "object",
+        "properties": { "publicAddress": { "type": "string" }, "signature": { "type": "string" } },
+        "required": ["publicAddress", "signature"]
+      },
+      "Web3LoginRequest": {
+        "type": "object",
+        "properties": { "publicAddress": { "type": "string" }, "signedMessage": { "type": "string" } },
+        "required": ["publicAddress", "signedMessage"]
+      },
+      "AccessTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "token_type": { "type": "string" },
+          "expires_in": { "type": "number" },
+          "refresh_token": { "type": "string" },
+          "scope": { "type": "string" }
+        },
+        "required": ["access_token", "token_type", "expires_in"]
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": { "refreshToken": { "type": "string" } },
+        "required": ["refreshToken"]
+      }
+    }
+  }
+}
