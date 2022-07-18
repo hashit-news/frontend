@@ -3,10 +3,10 @@ import { FunctionComponent } from 'react';
 import { ThemeSwitcher } from '../theme-switcher/theme-switcher';
 import { HeaderProps } from './header.types';
 import { UserCircleIcon } from '@heroicons/react/solid';
-import { useAuth } from '../../contexts/web3/web3.provider';
+import { useWeb3 } from '../../contexts/web3/web3.provider';
 
 export const Header: FunctionComponent<HeaderProps> = () => {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn, signOut } = useWeb3();
 
   return (
     <header className="navbar bg-base-100">

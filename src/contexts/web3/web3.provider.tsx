@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { JwtPayloadDto, Web3ContextProps, Web3User } from './web3.types';
 import detectEthereumProvider from '@metamask/detect-provider';
 import Web3 from 'web3';
@@ -10,13 +10,14 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import useInterval from '../../hooks/useInterval';
 import moment from 'moment';
 import { AccessTokenResponse } from '../../api/backend/swagger';
+import useWindowFocus from '../../hooks/useWindowFocus';
 
 const AuthContext = createContext<Web3ContextProps>({
   signIn: async () => {},
   signOut: async () => {},
 });
 
-export const useAuth = () => useContext(AuthContext);
+export const useWeb3 = () => useContext(AuthContext);
 
 type Props = {
   children: ReactNode;
@@ -28,6 +29,7 @@ export const Web3Provider = ({ children }: Props) => {
   const [token, setToken] = useLocalStorage<AccessTokenResponse | undefined>('TOKEN', undefined);
   const [web3, setWeb3] = useState<Web3>();
   const [provider, setProvider] = useState<BaseProvider>();
+  const windowFocused = useWindowFocus();
 
   useEffect(() => {
     if (provider) {
@@ -50,30 +52,39 @@ export const Web3Provider = ({ children }: Props) => {
     };
   }, [provider]);
 
+  useEffect(() => {
+    if (windowFocused) {
+      refreshToken();
+    }
+  }, [windowFocused]);
+
   // When mounted on client, now we can show the UI
   useEffect(() => setMounted(true), []);
 
   // check every minute to see if a
   // user's token needs to be refreshed
-  useInterval(
-    () => {
-      if (user && token && token.refresh_token) {
-        const payload = jwt_decode<JwtPayloadDto>(token.access_token);
-        const expires_unix = payload.exp ?? 0;
+  useInterval(() => refreshToken(), user && token && token.refresh_token ? 60000 : null);
 
-        if (expires_unix > 0) {
-          const expiry = moment.unix(expires_unix);
-          const now = moment.utc();
-          if (now.isAfter(expiry)) {
-            getRefreshToken(token.refresh_token).then(newToken => {
+  const refreshToken = useCallback(() => {
+    if (user && token && token.refresh_token) {
+      const payload = jwt_decode<JwtPayloadDto>(token.access_token);
+      const expires_unix = payload.exp ?? 0;
+
+      if (expires_unix > 0) {
+        const expiry = moment.unix(expires_unix);
+        const now = moment.utc();
+        if (now.isAfter(expiry)) {
+          getRefreshToken(token.refresh_token)
+            .then(newToken => {
               setToken(newToken);
+            })
+            .catch(() => {
+              signOut();
             });
-          }
         }
       }
-    },
-    user && token && token.refresh_token ? 60000 : null
-  );
+    }
+  }, [user, token]);
 
   if (!mounted) {
     return null;
