@@ -108,7 +108,7 @@ export const Web3Provider = ({ children }: Props) => {
       const loginInfo = await getLoginInfo(address);
       const web3 = new Web3(provider as unknown as provider);
 
-      const signedMessage = await web3.eth.personal.sign(loginInfo.signature, loginInfo.publicAddress, '');
+      const signedMessage = await web3.eth.personal.sign(loginInfo.signature, loginInfo.walletAddress, '');
       const token = await getAccessToken(address, signedMessage);
 
       if (token) {
@@ -132,15 +132,15 @@ export const Web3Provider = ({ children }: Props) => {
     setToken(undefined);
   };
 
-  const getLoginInfo = async (publicAddress: string) => {
-    return await api.auth.getLoginInfo({ publicAddress });
+  const getLoginInfo = async (walletAddress: string) => {
+    return await api.auth.getLoginInfo({ walletAddress });
   };
 
-  const getAccessToken = async (publicAddress: string, signedMessage: string) => {
+  const getAccessToken = async (walletAddress: string, signedMessage: string) => {
     try {
       return await api.auth.getToken({
         requestBody: {
-          publicAddress,
+          walletAddress,
           signedMessage,
         },
       });

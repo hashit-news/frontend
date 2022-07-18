@@ -23,7 +23,7 @@
     "/auth/web3": {
       "get": {
         "operationId": "getLoginInfo",
-        "parameters": [{ "name": "publicAddress", "required": true, "in": "query", "schema": { "type": "string" } }],
+        "parameters": [{ "name": "walletAddress", "required": true, "in": "query", "schema": { "type": "string" } }],
         "responses": {
           "200": {
             "description": "",
@@ -161,13 +161,13 @@
       },
       "Web3LoginInfoResponse": {
         "type": "object",
-        "properties": { "publicAddress": { "type": "string" }, "signature": { "type": "string" } },
-        "required": ["publicAddress", "signature"]
+        "properties": { "walletAddress": { "type": "string" }, "signature": { "type": "string" } },
+        "required": ["walletAddress", "signature"]
       },
       "Web3LoginRequest": {
         "type": "object",
-        "properties": { "publicAddress": { "type": "string" }, "signedMessage": { "type": "string" } },
-        "required": ["publicAddress", "signedMessage"]
+        "properties": { "walletAddress": { "type": "string" }, "signedMessage": { "type": "string" } },
+        "required": ["walletAddress", "signedMessage"]
       },
       "AccessTokenResponse": {
         "type": "object",
