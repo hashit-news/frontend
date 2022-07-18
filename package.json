@@ -16,7 +16,6 @@
     "codegen": "openapi -i ./src/api/backend/swagger.json -o ./src/api/backend/swagger -c axios --name BackendApiClient --useUnionTypes --useOptions"
   },
   "dependencies": {
-    "@headlessui/react": "^1.6.6",
     "@heroicons/react": "^1.0.6",
     "@metamask/detect-provider": "^1.2.0",
     "@metamask/providers": "^9.0.0",

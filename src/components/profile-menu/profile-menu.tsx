@@ -1,6 +1,5 @@
-import { Menu, Transition } from '@headlessui/react';
 import { UserCircleIcon } from '@heroicons/react/solid';
-import { Fragment, FunctionComponent } from 'react';
+import { FunctionComponent } from 'react';
 import { useWeb3 } from '../../contexts/web3/web3.provider';
 
 export const ProfileMenu: FunctionComponent = () => {
