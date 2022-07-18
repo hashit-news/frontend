@@ -16,12 +16,12 @@ export class AuthService {
    * @returns Web3LoginInfoResponse
    * @throws ApiError
    */
-  public getLoginInfo({ publicAddress }: { publicAddress: string }): CancelablePromise<Web3LoginInfoResponse> {
+  public getLoginInfo({ walletAddress }: { walletAddress: string }): CancelablePromise<Web3LoginInfoResponse> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/auth/web3',
       query: {
-        publicAddress: publicAddress,
+        walletAddress: walletAddress,
       },
       errors: {
         401: `Unauthorized`,

@@ -3,6 +3,6 @@
 /* eslint-disable */
 
 export type Web3LoginRequest = {
-  publicAddress: string;
+  walletAddress: string;
   signedMessage: string;
 };
