@@ -23,7 +23,7 @@ export const useSession = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useLocalStorage<AuthenticatedUser | undefined>('USER', undefined);
   const [token, setToken] = useLocalStorage<AccessTokenResponse | undefined>('TOKEN', undefined);
-  const { currentAccount, currentChainId, connect, disconnect, isConnected, web3 } = useWeb3();
+  const { connect, disconnect, isConnected, web3 } = useWeb3();
   const windowFocused = useWindowFocus();
 
   useEffect(() => {
