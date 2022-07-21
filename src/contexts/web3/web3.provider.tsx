@@ -90,9 +90,7 @@ export const Web3Provider = ({ children }: Props) => {
     const provider = (await detectEthereumProvider()) as BaseProvider;
 
     if (provider) {
-      const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
       const chainId = (await provider.request({ method: 'eth_chainId' })) as string;
-
       if (chainId !== process.env.NEXT_PUBLIC_ETH_ALLOWED_CHAIN_ID) {
         await provider.request({
           method: 'wallet_switchEthereumChain',
@@ -100,6 +98,7 @@ export const Web3Provider = ({ children }: Props) => {
         });
       }
 
+      const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
       const address = accounts[0];
       const loginInfo = await getLoginInfo(address);
       const web3 = new Web3(provider as unknown as provider);
