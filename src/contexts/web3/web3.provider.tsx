@@ -86,10 +86,6 @@ export const Web3Provider = ({ children }: Props) => {
     }
   }, [user, token]);
 
-  if (!mounted) {
-    return null;
-  }
-
   const signIn = async () => {
     const provider = (await detectEthereumProvider()) as BaseProvider;
 
@@ -164,6 +160,10 @@ export const Web3Provider = ({ children }: Props) => {
 
     return;
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider
