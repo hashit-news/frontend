@@ -1,9 +1,9 @@
 import { UserCircleIcon } from '@heroicons/react/solid';
 import { FunctionComponent } from 'react';
-import { useWeb3 } from '../../contexts/web3/web3.provider';
+import { useSession } from '../../contexts/auth/auth.provider';
 
 export const ProfileMenu: FunctionComponent = () => {
-  const { user, signIn, signOut } = useWeb3();
+  const { user, signIn, signOut } = useSession();
 
   return (
     <>

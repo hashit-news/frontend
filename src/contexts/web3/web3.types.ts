@@ -1,22 +1,15 @@
 import Web3 from 'web3';
 
 export type Web3ContextProps = {
-  user?: Web3User;
+  currentAccount?: string;
+  currentChainId?: number;
+  isConnected: boolean;
   web3?: Web3;
-  signIn: () => Promise<void>;
-  signOut: () => Promise<void>;
+  connect: () => Promise<WalletUser | undefined>;
+  disconnect: () => void;
 };
 
-export type Web3User = {
-  id: string;
-  username?: string | null;
+export type WalletUser = {
   walletAddress: string;
-  chainId: string;
+  chainId: number;
 };
-
-export interface JwtPayloadDto {
-  sub: string;
-  name?: string | null;
-  iat?: number;
-  exp?: number;
-}

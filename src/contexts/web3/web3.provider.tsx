@@ -1,23 +1,18 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { JwtPayloadDto, Web3ContextProps, Web3User } from './web3.types';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { WalletUser, Web3ContextProps } from './web3.types';
 import detectEthereumProvider from '@metamask/detect-provider';
 import Web3 from 'web3';
 import { provider } from 'web3-core';
 import { BaseProvider } from '@metamask/providers';
-import api from '../../api/backend';
-import jwt_decode from 'jwt-decode';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import useInterval from '../../hooks/useInterval';
-import moment from 'moment';
-import { AccessTokenResponse } from '../../api/backend/swagger';
-import useWindowFocus from '../../hooks/useWindowFocus';
+import { env } from '../../config';
 
-const AuthContext = createContext<Web3ContextProps>({
-  signIn: async () => {},
-  signOut: async () => {},
+const Web3Context = createContext<Web3ContextProps>({
+  isConnected: false,
+  connect: async () => undefined,
+  disconnect: () => {},
 });
 
-export const useWeb3 = () => useContext(AuthContext);
+export const useWeb3 = () => useContext(Web3Context);
 
 type Props = {
   children: ReactNode;
@@ -25,26 +20,27 @@ type Props = {
 
 export const Web3Provider = ({ children }: Props) => {
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useLocalStorage<Web3User | undefined>('USER', undefined);
-  const [token, setToken] = useLocalStorage<AccessTokenResponse | undefined>('TOKEN', undefined);
   const [web3, setWeb3] = useState<Web3>();
   const [provider, setProvider] = useState<BaseProvider>();
-  const windowFocused = useWindowFocus();
+  const [currentAccount, setcurrentAccount] = useState<string>();
+  const [currentChainId, setCurrentChainId] = useState<number>();
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    detectEthereumProvider({ mustBeMetaMask: true })
+      .then(provider => {
+        const web3 = new Web3(provider as unknown as provider);
+        setWeb3(web3);
+        setProvider(provider as BaseProvider);
+        setIsConnected(true);
+      })
+      .catch(err => console.log(err));
+  }, []);
 
   useEffect(() => {
     if (provider) {
-      provider.on('accountsChanged', _accounts => {
-        signOut();
-      });
-
-      provider.on('chainChanged', (chainId: string) => {
-        if (user) {
-          setUser({
-            ...user,
-            chainId,
-          });
-        }
-      });
+      provider.on('accountsChanged', (accounts: string[]) => handleAccountChanged(accounts));
+      provider.on('chainChanged', (chainId: string) => handleChainIdChanged(chainId));
     }
 
     return () => {
@@ -52,129 +48,160 @@ export const Web3Provider = ({ children }: Props) => {
     };
   }, [provider]);
 
-  useEffect(() => {
-    if (windowFocused) {
-      refreshToken();
-    }
-  }, [windowFocused]);
-
-  // When mounted on client, now we can show the UI
-  useEffect(() => setMounted(true), []);
-
-  // check every minute to see if a
-  // user's token needs to be refreshed
-  useInterval(() => refreshToken(), user && token && token.refresh_token ? 60000 : null);
-
-  const refreshToken = useCallback(() => {
-    if (user && token && token.refresh_token) {
-      const payload = jwt_decode<JwtPayloadDto>(token.access_token);
-      const expires_unix = payload.exp ?? 0;
-
-      if (expires_unix > 0) {
-        const expiry = moment.unix(expires_unix);
-        const now = moment.utc();
-        if (now.isAfter(expiry)) {
-          getRefreshToken(token.refresh_token)
-            .then(newToken => {
-              setToken(newToken);
-            })
-            .catch(() => {
-              signOut();
-            });
-        }
+  const connect = async (): Promise<WalletUser | undefined> => {
+    console.log('connecting', provider);
+    if (provider) {
+      const chainId = (await provider.request({ method: 'eth_chainId' })) as string;
+      await handleChainIdChanged(chainId);
+      const accounts = await provider.request({ method: 'eth_accounts' });
+      await handleAccountChanged(accounts as string[]);
+      console.log('finished', currentAccount, currentChainId);
+      if (currentAccount && currentChainId) {
+        return {
+          walletAddress: currentAccount,
+          chainId: currentChainId,
+        };
       }
     }
-  }, [user, token]);
 
-  const signIn = async () => {
-    const provider = (await detectEthereumProvider()) as BaseProvider;
+    return;
+  };
 
-    if (provider) {
-      const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
-      const chainId = (await provider.request({ method: 'eth_chainId' })) as string;
+  const disconnect = () => {
+    setWeb3(undefined);
+    setProvider(undefined);
+    setcurrentAccount(undefined);
+    setCurrentChainId(undefined);
+  };
 
-      if (chainId !== process.env.NEXT_PUBLIC_ETH_ALLOWED_CHAIN_ID) {
+  const parseChainId = (chainId: string) => {
+    const parsedChainId = parseInt(chainId?.replace('0x', ''), 10);
+    if (Number.isNaN(parsedChainId)) {
+      return 0;
+    }
+    return parsedChainId;
+  };
+
+  const handleChainIdChanged = async (chainId: string) => {
+    try {
+      const parsedChainId = parseChainId(chainId);
+      if (parsedChainId !== env.ethAllowedChainId) {
+        if (!provider) {
+          throw new Error('No provider');
+        }
+
         await provider.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: process.env.NEXT_PUBLIC_ETH_ALLOWED_CHAIN_ID }],
+          params: [{ chainId: `0x${env.ethAllowedChainId}` }],
         });
       }
 
-      const address = accounts[0];
-      const loginInfo = await getLoginInfo(address);
-      const web3 = new Web3(provider as unknown as provider);
-
-      const signedMessage = await web3.eth.personal.sign(loginInfo.signature, loginInfo.walletAddress, '');
-      const token = await getAccessToken(address, signedMessage);
-
-      if (token) {
-        const payload = jwt_decode<JwtPayloadDto>(token.access_token);
-
-        setToken(token);
-        setWeb3(web3);
-        setProvider(provider);
-        setUser({
-          id: payload.sub,
-          username: payload.name,
-          walletAddress: address,
-          chainId,
-        });
-      }
-    }
-  };
-
-  const signOut = async () => {
-    setUser(undefined);
-    setToken(undefined);
-  };
-
-  const getLoginInfo = async (walletAddress: string) => {
-    return await api.auth.getLoginInfo({ walletAddress });
-  };
-
-  const getAccessToken = async (walletAddress: string, signedMessage: string) => {
-    try {
-      return await api.auth.getToken({
-        requestBody: {
-          walletAddress,
-          signedMessage,
-        },
-      });
+      setCurrentChainId(parsedChainId);
     } catch (err) {
-      signOut();
+      console.error(err);
+      disconnect();
     }
-
-    return;
   };
 
-  const getRefreshToken = async (refreshToken: string) => {
-    try {
-      return await api.auth.getRefreshToken({
-        requestBody: {
-          refreshToken,
-        },
-      });
-    } catch (err) {
-      signOut();
+  const handleAccountChanged = (accounts: string[]) => {
+    if (accounts.length === 0) {
+      // MetaMask is locked or the user has not connected any accounts
+      console.log('Please connect to MetaMask.');
+    } else if (!currentAccount) {
+      console.log('here');
+      setcurrentAccount(accounts[0]);
+      // Do any other work!
+    } else {
+      console.log('dc');
+      disconnect();
     }
-
-    return;
   };
 
+  // // useEffect(() => setMounted(true), []);
+
+  // const connectProvider = async () => {
+  //   Web3.providers.WebsocketProvider;
+  //   try {
+  //     const provider = await detectEthereumProvider({ mustBeMetaMask: true });
+  //     setProvider(provider as BaseProvider);
+  //     setWeb3(new Web3(provider as unknown as provider));
+  //     console.log('connected to provider', provider);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setProvider(undefined);
+  //     setWeb3(undefined);
+  //   }
+  // };
+
+  // const requestCurrentAccount = async () => {
+  //   if (!provider) {
+  //     await connectProvider();
+  //   }
+
+  //   if (provider) {
+  //     const accounts = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
+  //     setCurrentWalletAddress(accounts[0]);
+  //     return accounts[0];
+  //   }
+
+  //   return;
+  // };
+
+  // const requestCurrentChainId = async () => {
+  //   if (!provider) {
+  //     await connectProvider();
+  //   }
+
+  //   if (provider) {
+  //     const chainId = (await provider.request({ method: 'eth_chainId' })) as string;
+  //     setCurrentChainId(chainId);
+  //     return chainId;
+  //   }
+
+  //   return;
+  // };
+
+  // const resetCurrentAccount = () => {
+  //   setCurrentWalletAddress(undefined);
+  //   setCurrentChainId(undefined);
+  // };
+
+  // useEffect(() => {
+  //   if (provider) {
+  //     console.log('listening for provider changes');
+  //     provider.on('accountsChanged', (accounts: string[]) => {
+  //       resetCurrentAccount();
+  //     });
+
+  //     provider.on('chainChanged', (chainId: string) => {
+  //       resetCurrentAccount();
+  //     });
+  //   }
+
+  //   return () => {
+  //     provider?.removeAllListeners();
+  //   };
+  // }, [provider]);
+
+  useEffect(() => setMounted(true), []);
+
+  // When mounted on client, now we can show the UI
   if (!mounted) {
     return null;
   }
 
   return (
-    <AuthContext.Provider
+    <Web3Context.Provider
       value={{
-        user,
+        currentAccount,
+        currentChainId,
+        isConnected,
         web3,
-        signIn,
-        signOut,
+        connect,
+        disconnect,
       }}
     >
       {children}
-    </AuthContext.Provider>
+    </Web3Context.Provider>
   );
 };
