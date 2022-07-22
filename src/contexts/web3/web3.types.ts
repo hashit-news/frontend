@@ -1,22 +1,9 @@
-import Web3 from 'web3';
+import { BaseProvider } from '@metamask/providers';
 
 export type Web3ContextProps = {
-  user?: Web3User;
-  web3?: Web3;
-  signIn: () => Promise<void>;
-  signOut: () => Promise<void>;
+  provider?: BaseProvider;
+  requestChainId: () => Promise<number | undefined>;
+  requestAccount: () => Promise<string | undefined>;
+  switchNetwork: (chainId: number) => Promise<void>;
+  signMessage: (signature: string, walletAddress: string) => Promise<string | undefined>;
 };
-
-export type Web3User = {
-  id: string;
-  username?: string | null;
-  walletAddress: string;
-  chainId: string;
-};
-
-export interface JwtPayloadDto {
-  sub: string;
-  name?: string | null;
-  iat?: number;
-  exp?: number;
-}
