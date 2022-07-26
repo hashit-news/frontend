@@ -1,5 +1,5 @@
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, FunctionComponent, ReactNode, useState } from 'react';
+import { Fragment, FunctionComponent, ReactNode } from 'react';
 
 export type ModalProps = {
   title?: string;
@@ -9,9 +9,7 @@ export type ModalProps = {
   children: ReactNode;
 };
 
-export const Modal: FunctionComponent<ModalProps> = ({ title, open, level = 0, onClose, children }) => {
-  const [showChild, setShowChild] = useState(false);
-
+export const Modal: FunctionComponent<ModalProps> = ({ title, open, onClose, children }) => {
   return (
     <Transition appear show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={onClose}>
